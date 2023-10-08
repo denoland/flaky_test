@@ -7,8 +7,11 @@ use quote::quote;
 pub fn flaky_test(_attr: TokenStream, input: TokenStream) -> TokenStream {
   let input_fn = syn::parse_macro_input!(input as syn::ItemFn);
   let name = input_fn.sig.ident.clone();
+  let attrs = input_fn.attrs.clone();
+
   TokenStream::from(quote! {
     #[test]
+    #(#attrs)*
     fn #name() {
       #input_fn
 

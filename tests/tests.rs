@@ -16,10 +16,8 @@ fn fail_first_two_times() {
   assert_eq!(3, C.load(Ordering::SeqCst));
 }
 
-/* TODO(ry) should_panic doesn't seem to work
 #[flaky_test]
 #[should_panic]
 fn fail_three_times() {
   assert!(false);
 }
-*/
