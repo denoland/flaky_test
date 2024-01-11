@@ -11,7 +11,7 @@ description = "atttribute macro for running a flaky test multiple times"
 members = ["impl"]
 
 [dependencies]
-flaky_test_impl = { version = "0.1.0", path = "impl" }
+flaky_test_impl = { path = "impl" }
 futures-util = { version = "0.3", default-features = false, features = ["std"] }
 
 [dev-dependencies]
