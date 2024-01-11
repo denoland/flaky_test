@@ -12,5 +12,7 @@ members = ["impl"]
 
 [dependencies]
 flaky_test_impl = { version = "0.1.0", path = "impl" }
-tokio = { version = "1", default-features = false, features = ["rt", "rt-multi-thread", "macros"] }
 futures-util = { version = "0.3", default-features = false, features = ["std"] }
+
+[dev-dependencies]
+tokio = { version = "1", default-features = false, features = ["rt", "rt-multi-thread", "macros"] }

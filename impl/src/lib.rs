@@ -102,6 +102,7 @@ fn parse_attr(attr: proc_macro2::TokenStream) -> syn::Result<FlakyTestArgs> {
 /// #   Ok(42)
 /// # }
 /// // Async tests can be run by passing `tokio`.
+/// // Make sure `tokio` is added in your `Cargo.toml`.
 /// #[flaky_test(tokio)]
 /// async fn async_test() {
 ///   let res = async_operation().await.unwrap();
@@ -193,8 +194,8 @@ fn tokio(
 
   let fn_name = input_fn.sig.ident.clone();
   let tokio_macro = match tokio_args {
-    Some(args) => quote! { #[::flaky_test::tokio::test(#args)] },
-    None => quote! { #[::flaky_test::tokio::test] },
+    Some(args) => quote! { #[::tokio::test(#args)] },
+    None => quote! { #[::tokio::test] },
   };
 
   Ok(quote! {
