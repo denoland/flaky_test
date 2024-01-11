@@ -2,20 +2,15 @@
 name = "flaky_test"
 version = "0.1.0"
 authors = ["the Deno authors"]
-edition = "2018"
+edition = "2021"
 license = "MIT"
 repository = "https://github.com/denoland/flaky_test"
 description = "atttribute macro for running a flaky test multiple times"
 
-[lib]
-proc-macro = true
+[workspace]
+members = ["impl"]
 
 [dependencies]
-proc-macro2 = "1"
-quote = "1"
-syn = { version = "1", features = ["full"] }
-tokio = { version = "1", features = ["rt", "rt-multi-thread", "macros"], optional = true }
-futures-util = { version = "0.3", default-features = false, features = ["std"], optional = true }
-
-[features]
-tokio = ["dep:tokio", "dep:futures-util"]
+flaky_test_impl = { version = "0.1.0", path = "impl" }
+tokio = { version = "1", default-features = false, features = ["rt", "rt-multi-thread", "macros"] }
+futures-util = { version = "0.3", default-features = false, features = ["std"] }

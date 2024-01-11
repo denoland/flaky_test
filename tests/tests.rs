@@ -37,28 +37,24 @@ fn fail_ten_times() {
   assert!(false);
 }
 
-#[cfg(feature = "tokio")]
 #[flaky_test(tokio)]
 async fn tokio_basic() {
   let fut = std::future::ready(42);
   assert_eq!(fut.await, 42);
 }
 
-#[cfg(feature = "tokio")]
 #[flaky_test(tokio(flavor = "multi_thread", worker_threads = 2))]
 async fn tokio_complex() {
   let fut = std::future::ready(42);
   assert_eq!(fut.await, 42);
 }
 
-#[cfg(feature = "tokio")]
 #[flaky_test(tokio, times = 5)]
 async fn tokio_with_times() {
   let fut = std::future::ready(42);
   assert_eq!(fut.await, 42);
 }
 
-#[cfg(feature = "tokio")]
 #[flaky_test(tokio)]
 #[should_panic]
 async fn tokio_with_should_panic() {
