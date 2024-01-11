@@ -5,7 +5,7 @@ use proc_macro::TokenStream;
 use quote::quote;
 use syn::{
   parse::Parser as _, punctuated::Punctuated, Attribute, ItemFn, Lit, Meta,
-  MetaNameValue, Token,
+  MetaList, MetaNameValue, NestedMeta, Token,
 };
 
 struct FlakyTestArgs {
@@ -16,7 +16,7 @@ struct FlakyTestArgs {
 enum Runtime {
   Sync,
   #[cfg(feature = "tokio")]
-  Tokio,
+  Tokio(Option<Punctuated<NestedMeta, Token![,]>>),
 }
 
 impl Default for FlakyTestArgs {
@@ -28,9 +28,9 @@ impl Default for FlakyTestArgs {
   }
 }
 
-fn parse_attr(attr: TokenStream) -> syn::Result<FlakyTestArgs> {
+fn parse_attr(attr: proc_macro2::TokenStream) -> syn::Result<FlakyTestArgs> {
   let parser = Punctuated::<Meta, Token![,]>::parse_terminated;
-  let punctuated = parser.parse(attr)?;
+  let punctuated = parser.parse2(attr)?;
 
   let mut ret = FlakyTestArgs::default();
 
@@ -39,7 +39,7 @@ fn parse_attr(attr: TokenStream) -> syn::Result<FlakyTestArgs> {
       #[cfg(feature = "tokio")]
       Meta::Path(path) => {
         if path.is_ident("tokio") {
-          ret.runtime = Runtime::Tokio;
+          ret.runtime = Runtime::Tokio(None);
         } else {
           return Err(syn::Error::new_spanned(path, "expected `tokio`"));
         }
@@ -56,6 +56,13 @@ fn parse_attr(attr: TokenStream) -> syn::Result<FlakyTestArgs> {
             path,
             "expected `times = <int>`",
           ));
+        }
+      }
+      Meta::List(MetaList { path, nested, .. }) => {
+        if path.is_ident("tokio") {
+          ret.runtime = Runtime::Tokio(Some(nested));
+        } else {
+          return Err(syn::Error::new_spanned(path, "expected `tokio`"));
         }
       }
       _ => {
@@ -107,31 +114,53 @@ fn parse_attr(attr: TokenStream) -> syn::Result<FlakyTestArgs> {
 ///   let res = async_operation().await.unwrap();
 ///   assert_eq!(res, 42);
 /// }
+///
+/// // Any arguments that `#[tokio::test]` supports can be specified.
+/// #[flaky_test(tokio(flavor = "multi_thraed", worker_threads = 2))]
+/// async fn async_test_complex() {
+///   let res = async_operation().await.unwrap();
+///   assert_eq!(res, 42);
+/// }
 /// ```
 #[proc_macro_attribute]
 pub fn flaky_test(attr: TokenStream, input: TokenStream) -> TokenStream {
-  let args = match parse_attr(attr) {
+  let attr = proc_macro2::TokenStream::from(attr);
+  let mut input = proc_macro2::TokenStream::from(input);
+
+  match inner(attr, input.clone()) {
     Err(e) => {
-      let mut input2 = proc_macro2::TokenStream::from(input);
-      input2.extend(e.into_compile_error());
-      return input2.into();
+      input.extend(e.into_compile_error());
+      input.into()
     }
-    Ok(args) => args,
-  };
-  let input_fn = syn::parse_macro_input!(input as ItemFn);
+    Ok(t) => t.into(),
+  }
+}
+
+fn inner(
+  attr: proc_macro2::TokenStream,
+  input: proc_macro2::TokenStream,
+) -> syn::Result<proc_macro2::TokenStream> {
+  let args = parse_attr(attr)?;
+  let input_fn: ItemFn = syn::parse2(input)?;
   let attrs = input_fn.attrs.clone();
 
   match args.runtime {
     Runtime::Sync => sync(input_fn, attrs, args.times),
     #[cfg(feature = "tokio")]
-    Runtime::Tokio => tokio(input_fn, attrs, args.times),
+    Runtime::Tokio(tokio_args) => {
+      tokio(input_fn, attrs, args.times, tokio_args)
+    }
   }
 }
 
-fn sync(input_fn: ItemFn, attrs: Vec<Attribute>, times: usize) -> TokenStream {
+fn sync(
+  input_fn: ItemFn,
+  attrs: Vec<Attribute>,
+  times: usize,
+) -> syn::Result<proc_macro2::TokenStream> {
   let fn_name = input_fn.sig.ident.clone();
 
-  TokenStream::from(quote! {
+  Ok(quote! {
     #[test]
     #(#attrs)*
     fn #fn_name() {
@@ -139,14 +168,14 @@ fn sync(input_fn: ItemFn, attrs: Vec<Attribute>, times: usize) -> TokenStream {
 
       for i in 0..#times {
         println!("flaky_test retry {}", i);
-        let r = std::panic::catch_unwind(|| {
+        let r = ::std::panic::catch_unwind(|| {
           #fn_name();
         });
         if r.is_ok() {
           return;
         }
         if i == #times - 1 {
-          std::panic::resume_unwind(r.unwrap_err());
+          ::std::panic::resume_unwind(r.unwrap_err());
         }
       }
     }
@@ -154,11 +183,24 @@ fn sync(input_fn: ItemFn, attrs: Vec<Attribute>, times: usize) -> TokenStream {
 }
 
 #[cfg(feature = "tokio")]
-fn tokio(input_fn: ItemFn, attrs: Vec<Attribute>, times: usize) -> TokenStream {
-  let fn_name = input_fn.sig.ident.clone();
+fn tokio(
+  input_fn: ItemFn,
+  attrs: Vec<Attribute>,
+  times: usize,
+  tokio_args: Option<Punctuated<NestedMeta, Token![,]>>,
+) -> syn::Result<proc_macro2::TokenStream> {
+  if input_fn.sig.asyncness.is_none() {
+    return Err(syn::Error::new_spanned(input_fn.sig, "must be `async fn`"));
+  }
 
-  TokenStream::from(quote! {
-    #[tokio::test]
+  let fn_name = input_fn.sig.ident.clone();
+  let tokio_macro = match tokio_args {
+    Some(args) => quote! { #[::tokio::test(#args)] },
+    None => quote! { #[::tokio::test] },
+  };
+
+  Ok(quote! {
+    #tokio_macro
     #(#attrs)*
     async fn #fn_name() {
       #input_fn
@@ -171,7 +213,7 @@ fn tokio(input_fn: ItemFn, attrs: Vec<Attribute>, times: usize) -> TokenStream {
           return;
         }
         if i == #times - 1 {
-          std::panic::resume_unwind(r.unwrap_err());
+          ::std::panic::resume_unwind(r.unwrap_err());
         }
       }
     }

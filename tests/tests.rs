@@ -44,12 +44,12 @@ async fn tokio_basic() {
   assert_eq!(fut.await, 42);
 }
 
-//#[cfg(feature = "tokio")]
-//#[flaky_test(tokio(flavor = "multi_thread", worker_threads = 2))]
-//async fn tokio_basic() {
-//  let fut = std::future::ready(42);
-//  assert_eq!(fut.await, 42);
-//}
+#[cfg(feature = "tokio")]
+#[flaky_test(tokio(flavor = "multi_thread", worker_threads = 2))]
+async fn tokio_complex() {
+  let fut = std::future::ready(42);
+  assert_eq!(fut.await, 42);
+}
 
 #[cfg(feature = "tokio")]
 #[flaky_test(tokio, times = 5)]
