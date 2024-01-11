@@ -15,6 +15,7 @@ proc-macro2 = "1"
 quote = "1"
 syn = { version = "1", features = ["full"] }
 tokio = { version = "1", features = ["rt", "macros"], optional = true }
+futures-util = { version = "0.3", features = ["std"], optional = true }
 
 [features]
-tokio = ["dep:tokio"]
+tokio = ["dep:tokio", "dep:futures-util"]
