@@ -9,8 +9,10 @@ use syn::Attribute;
 use syn::ItemFn;
 use syn::Lit;
 use syn::Meta;
+#[cfg(feature = "tokio")]
 use syn::MetaList;
 use syn::MetaNameValue;
+#[cfg(feature = "tokio")]
 use syn::NestedMeta;
 use syn::Token;
 
@@ -64,6 +66,7 @@ fn parse_attr(attr: proc_macro2::TokenStream) -> syn::Result<FlakyTestArgs> {
           ));
         }
       }
+      #[cfg(feature = "tokio")]
       Meta::List(MetaList { path, nested, .. }) => {
         if path.is_ident("tokio") {
           ret.runtime = Runtime::Tokio(Some(nested));
@@ -72,10 +75,13 @@ fn parse_attr(attr: proc_macro2::TokenStream) -> syn::Result<FlakyTestArgs> {
         }
       }
       _ => {
-        return Err(syn::Error::new_spanned(
-          meta,
-          "expected `times = <int>` or `tokio`",
-        ))
+        let msg = if cfg!(feature = "tokio") {
+          "expected `times = <int>` or `tokio`"
+        } else {
+          "expected `times = <int>"
+        };
+
+        return Err(syn::Error::new_spanned(meta, msg));
       }
     }
   }
