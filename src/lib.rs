@@ -219,8 +219,8 @@ fn tokio(
 
       for i in 0..#times {
         println!("flaky_test retry {}", i);
-        use ::futures_util::future::FutureExt as _;
-        let r = #fn_name().catch_unwind().await;
+        let fut = ::std::panic::AssertUnwindSafe(#fn_name());
+        let r = <_ as ::futures_util::future::FutureExt>::catch_unwind(fut).await;
         if r.is_ok() {
           return;
         }
