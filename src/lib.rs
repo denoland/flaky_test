@@ -3,10 +3,16 @@ extern crate syn;
 
 use proc_macro::TokenStream;
 use quote::quote;
-use syn::{
-  parse::Parser as _, punctuated::Punctuated, Attribute, ItemFn, Lit, Meta,
-  MetaList, MetaNameValue, NestedMeta, Token,
-};
+use syn::parse::Parser as _;
+use syn::punctuated::Punctuated;
+use syn::Attribute;
+use syn::ItemFn;
+use syn::Lit;
+use syn::Meta;
+use syn::MetaList;
+use syn::MetaNameValue;
+use syn::NestedMeta;
+use syn::Token;
 
 struct FlakyTestArgs {
   times: usize,
