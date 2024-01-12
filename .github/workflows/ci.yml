@@ -19,10 +19,10 @@ jobs:
           components: clippy,rustfmt
 
       - name: Build
-        run: cargo build --locked --release --all-targets
+        run: cargo build --release --all-targets
 
       - name: Test
-        run: cargo test --locked --release --all-targets
+        run: cargo test --release --all-targets
 
       - name: Lint
         run: cargo clippy --all-targets
