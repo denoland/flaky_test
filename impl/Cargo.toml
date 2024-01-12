@@ -1,0 +1,16 @@
+[package]
+name = "flaky_test_impl"
+version = "0.1.0"
+authors = ["the Deno authors"]
+edition = "2021"
+license = "MIT"
+repository = "https://github.com/denoland/flaky_test"
+description = "implementation detail of the `flaky_test` macro"
+
+[lib]
+proc-macro = true
+
+[dependencies]
+proc-macro2 = "1"
+quote = "1"
+syn = { version = "1", features = ["full"] }
