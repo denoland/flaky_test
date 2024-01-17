@@ -28,13 +28,13 @@ fn fail_first_nine_times() {
 #[flaky_test]
 #[should_panic]
 fn fail_three_times() {
-  assert!(false);
+  panic!("should panic");
 }
 
 #[flaky_test(times = 10)]
 #[should_panic]
 fn fail_ten_times() {
-  assert!(false);
+  panic!("should panic");
 }
 
 #[flaky_test(tokio)]
