@@ -1,6 +1,6 @@
 [package]
 name = "flaky_test"
-version = "0.2.0"
+version = "0.2.1"
 authors = ["the Deno authors"]
 edition = "2021"
 license = "MIT"
@@ -11,7 +11,7 @@ description = "atttribute macro for running a flaky test multiple times"
 members = ["impl"]
 
 [dependencies]
-flaky_test_impl = { version = "=0.2.0", path = "impl" }
+flaky_test_impl = { version = "0.2.1", path = "impl" }
 futures-util = { version = "0.3", default-features = false, features = ["std"] }
 
 [dev-dependencies]
